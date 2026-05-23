@@ -396,6 +396,8 @@
 }
 
 .page-stage:not(.is-work) .work-cover::before {
+  inset: -4px;
+  clip-path: inset(4px);
   filter: grayscale(1) blur(1.4px);
 }
 
