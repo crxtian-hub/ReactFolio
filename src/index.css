@@ -1,0 +1,63 @@
+@font-face {
+  font-family: 'Untitled Sans';
+  src: url('./assets/fonts/UntitledSans-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Untitled Sans';
+  src: url('./assets/fonts/UntitledSans-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Untitled Sans';
+  src: url('./assets/fonts/UntitledSans-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Untitled Sans';
+  src: url('./assets/fonts/UntitledSans-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Untitled Sans';
+  src: url('./assets/fonts/UntitledSans-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--project-white, #F0F0EF);
+  font-family: 'Untitled Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-weight: 400;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
