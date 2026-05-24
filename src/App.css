@@ -2958,6 +2958,7 @@
   :root {
     --works-grid-gap: 3vw;
     --works-grid-width: calc(100vw - (4 * var(--works-grid-gap)));
+    --index-intro-kicker-delay: var(--index-intro-cover-duration);
     --mobile-chrome-label-font-size: clamp(12px, 1vw, 16px);
     --mobile-about-text-font-size: 3vw;
     --mobile-about-infos-font-size: 7vw;
@@ -2985,7 +2986,7 @@
 
   .logo-loop {
     left: calc((100% - var(--works-grid-width)) / 2);
-    width: calc((var(--works-grid-width) - (3 * var(--works-grid-gap))) / 4);
+    width: var(--mobile-work-col-width);
   }
 
   .page-stage.is-about .about-roles,
@@ -3107,6 +3108,13 @@
   .page-stage:not(.is-work):not(.is-about) .work-cover-caption,
   .page-stage.is-about .work-cover-caption {
     opacity: 1;
+  }
+
+  .page-stage.is-index-intro .work-cover-caption {
+    animation: index-kicker-blur-in var(--index-intro-kicker-duration) cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(
+      var(--index-intro-start-delay, 0ms) + var(--index-intro-kicker-delay) + (var(--index-cover-index, 0) * var(--index-intro-cover-stagger))
+    );
   }
 
   .page-stage:not(.is-work):not(.is-about) .work-cover-kicker-viewport,
@@ -3580,9 +3588,19 @@
   color: var(--project-white);
 }
 
+.copyright-vertical.is-about {
+  color: var(--project-black);
+}
+
 @media (max-width: 900px) {
+  .signature-mark {
+    left: calc((100% - var(--works-grid-width)) / 2);
+    width: var(--mobile-work-col-width);
+  }
+
   .copyright-vertical {
     font-size: 1.9vw;
+    bottom: 50vh;
   }
 }
 

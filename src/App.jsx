@@ -2982,7 +2982,7 @@ function App() {
     </section>
     </div>
     
-    <p className={`copyright-vertical${isWorkPage ? ' is-work' : ''}`}>
+    <p className={`copyright-vertical${isWorkPage ? ' is-work' : ''}${isAboutPage ? ' is-about' : ''}`}>
     CRISTIAND’AGOSTINO{currentYear}©
     </p>
     {isDesignerLogoCursorActive && (
