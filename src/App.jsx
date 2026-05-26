@@ -161,11 +161,11 @@ const works = [
     slug: 'msb-portfolio',
     legacySlugs: ['work-03'],
     title: 'MSB Portfolio',
-    titleLines: ['MSB', 'FASHION STYLIST'],
+    titleLines: ['MSB', 'STYLIST'],
     year: '2026',
     meta: {
       services: 'Design by fliesneverlie fullstack and motion by me',
-      client: 'Maria Sofia Brini, Portfolio',
+      client: 'Maria Sofia Brini, Fashion Styling Portfolio',
       isComingSoon: true,
     },
     assetsFolder: 'MSB_work',
@@ -181,7 +181,7 @@ const works = [
     year: '2026',
     meta: {
       services: 'Design by fliesneverlie fullstack and motion by me',
-      client: 'Marina Quaranta Stylist',
+      client: 'Marina Quaranta, Fashion Portfolio',
       exploreUrl: 'https://www.marinaquaranta.com/',
     },
     assetsFolder: 'MQ_work',
@@ -1766,7 +1766,8 @@ function App() {
       return undefined
     }
 
-    const workShowCoverNode = isIndexToWorkTransition
+    const isMobileViewport = window.matchMedia('(max-width: 900px)').matches
+    const workShowCoverNode = isIndexToWorkTransition && !isMobileViewport
     ? document.querySelector('.work-show-cover')
     : null
     const targetRect =
@@ -1784,7 +1785,6 @@ function App() {
     const initialHeight = workTransitionSnapshot.height
     const finalWidth = targetRect.width
     const finalHeight = targetRect.height
-    const isMobileViewport = window.matchMedia('(max-width: 900px)').matches
     const duration = isMobileViewport ? MOBILE_WORK_FLIP_DURATION_MS : WORK_FLIP_DURATION_MS
     const kickerColorDuration = Math.round(duration * 0.2)
     const kickerMoveDelay = Math.round(duration * 0.06)
