@@ -139,7 +139,7 @@ const works = [
     assetsFolder: 'TTC_work',
     detailImages: [DEFAULT_WORK_DETAIL_IMAGE_URL],
     startCol: 3,
-    offsetVw: 0,
+    offsetVw: -2,
   },
   {
     slug: 'a-m-photographer',
@@ -155,7 +155,7 @@ const works = [
     assetsFolder: 'AM_work',
     detailImages: [DEFAULT_WORK_DETAIL_IMAGE_URL],
     startCol: 5,
-    offsetVw: 8,
+    offsetVw: 5,
   },
   {
     slug: 'msb-portfolio',
@@ -171,7 +171,7 @@ const works = [
     assetsFolder: 'MSB_work',
     detailImages: [DEFAULT_WORK_DETAIL_IMAGE_URL],
     startCol: 8,
-    offsetVw: 22,
+    offsetVw: 19,
   },
   {
     slug: 'm-q-portfolio',
@@ -332,6 +332,7 @@ const WORK_GALLERY_NAV_ENTER_DELAY_MS =
   WORK_GALLERY_NAV_LEAVE_DELAY_MS + WORK_GALLERY_NAV_LEAVE_DURATION_MS + 80
 const WORK_SHOW_SCROLL_TOP_SETTLE_FRAMES = 2
 const INDEX_INTRO_DURATION_MS = 2900
+const DESIGNER_LOGO_CURSOR_LEAVE_DELAY_MS = 2000
 const preloadedImageUrls = new Set()
 const preloadingImagePromises = new Map()
 
@@ -665,6 +666,7 @@ function App() {
   const [workPageCoverSlide, setWorkPageCoverSlide] = useState(null)
   const [lockedWorkSlug, setLockedWorkSlug] = useState(null)
   const [isProjectNavContentReveal, setIsProjectNavContentReveal] = useState(false)
+  const [isProjectNavHandoffSettling, setIsProjectNavHandoffSettling] = useState(false)
   const [isWorkTitleClosing, setIsWorkTitleClosing] = useState(false)
   const [isWorkTitleExitComplete, setIsWorkTitleExitComplete] = useState(false)
   const [workGalleryMorph, setWorkGalleryMorph] = useState(null)
@@ -683,6 +685,7 @@ function App() {
   const [isDesignerLogoCursorActive, setIsDesignerLogoCursorActive] = useState(false)
   const [designerLogoCursorPosition, setDesignerLogoCursorPosition] = useState({ x: 0, y: 0 })
   const [activeAboutHeartIndex, setActiveAboutHeartIndex] = useState(0)
+  const [isLogoHovered, setIsLogoHovered] = useState(false)
   const [isIndexIntroActive, setIsIndexIntroActive] = useState(() => {
     if (route !== '/' || typeof window === 'undefined') {
       return false
@@ -706,6 +709,7 @@ function App() {
   const projectNavScrollSettleTimeoutRef = useRef(null)
   const projectNavRequestIdRef = useRef(0)
   const projectNavRouteTimeoutRef = useRef(null)
+  const projectNavHandoffTimeoutRef = useRef(null)
   const pendingWorkThumbsRouteRef = useRef(null)
   const logoBoostTimeoutRef = useRef(null)
   const returnToIndexTimeoutRef = useRef(null)
@@ -716,6 +720,7 @@ function App() {
   const preloaderExitTimeoutRef = useRef(null)
   const workTitleClosingStartedAtRef = useRef(null)
   const workTitleExitCompleteTimeoutRef = useRef(null)
+  const designerLogoCursorTimeoutRef = useRef(null)
   const workTopScrollRequestRef = useRef(0)
   const loadedLogoFramesRef = useRef(new Set())
   const previousRouteRef = useRef(route)
@@ -1052,7 +1057,7 @@ function App() {
   }, [totalFrames])
   
   useEffect(() => {
-    if (totalFrames <= 1) {
+    if (totalFrames <= 1 || isLogoHovered) {
       return undefined
     }
     
@@ -1076,7 +1081,7 @@ function App() {
     return () => {
       window.clearInterval(loopId)
     }
-  }, [isLogoRainbowBoost, totalFrames])
+  }, [isLogoHovered, isLogoRainbowBoost, totalFrames])
   
   useEffect(() => {
     works.forEach((work) => {
@@ -1118,6 +1123,33 @@ function App() {
   }, [activeAboutHeartIndex, isAboutPage])
 
   useEffect(() => {
+    if (!isDesignerLogoCursorActive) {
+      document.body.classList.remove('is-designer-logo-cursor-active')
+      return undefined
+    }
+
+    document.body.classList.add('is-designer-logo-cursor-active')
+
+    const updateCursorFromWindow = (event) => {
+      setDesignerLogoCursorPosition({ x: event.clientX, y: event.clientY })
+    }
+
+    window.addEventListener('pointermove', updateCursorFromWindow, { passive: true })
+
+    return () => {
+      window.removeEventListener('pointermove', updateCursorFromWindow)
+      document.body.classList.remove('is-designer-logo-cursor-active')
+    }
+  }, [isDesignerLogoCursorActive])
+
+  useEffect(() => () => {
+    if (designerLogoCursorTimeoutRef.current !== null) {
+      window.clearTimeout(designerLogoCursorTimeoutRef.current)
+      designerLogoCursorTimeoutRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
     if (!isAboutPage) {
       return undefined
     }
@@ -1157,6 +1189,7 @@ function App() {
       setWorkPageCoverSlide(null)
       setLockedWorkSlug(null)
       setIsProjectNavContentReveal(false)
+      setIsProjectNavHandoffSettling(false)
       setWorkGalleryMorph(null)
       setIsWorkThumbsEntering(false)
       setAboutReturnPath(nextAboutReturnPath)
@@ -1262,6 +1295,10 @@ function App() {
       if (projectNavRouteTimeoutRef.current !== null) {
         window.clearTimeout(projectNavRouteTimeoutRef.current)
       }
+
+      if (projectNavHandoffTimeoutRef.current !== null) {
+        window.clearTimeout(projectNavHandoffTimeoutRef.current)
+      }
     }
   }, [])
   
@@ -1300,6 +1337,7 @@ function App() {
       setIsWorkTitleClosing(false)
       setIsWorkTitleExitComplete(false)
       setIsProjectNavScrollSettling(true)
+      setIsProjectNavHandoffSettling(true)
       pendingWorkThumbsRouteRef.current = null
 
       if (projectNavScrollSettleTimeoutRef.current !== null) {
@@ -1340,6 +1378,13 @@ function App() {
       handoffFrameId = window.requestAnimationFrame(() => {
         cleanupFrameId = window.requestAnimationFrame(() => {
           setWorkPageCoverSlide(null)
+          if (projectNavHandoffTimeoutRef.current !== null) {
+            window.clearTimeout(projectNavHandoffTimeoutRef.current)
+          }
+          projectNavHandoffTimeoutRef.current = window.setTimeout(() => {
+            projectNavHandoffTimeoutRef.current = null
+            setIsProjectNavHandoffSettling(false)
+          }, 120)
         })
       })
     }
@@ -1453,6 +1498,7 @@ function App() {
       setWorkPageCoverSlide(null)
       setLockedWorkSlug(null)
       setIsProjectNavContentReveal(false)
+      setIsProjectNavHandoffSettling(false)
       setWorkGalleryMorph(null)
       setIsWorkTitleExitComplete(false)
       setIsWorkMetaEntering(false)
@@ -1984,6 +2030,7 @@ function App() {
     }
     
     if (shouldAnimateWorkCoverSlide) {
+      setIsProjectNavHandoffSettling(false)
       setWorkPageCoverSlide({
         fromSlug: currentWorkSlug,
         toSlug: nextWorkSlug,
@@ -1994,6 +2041,7 @@ function App() {
       }
     } else if (!shouldPreserveWorkCoverSlide) {
       setWorkPageCoverSlide(null)
+      setIsProjectNavHandoffSettling(false)
     }
     
     if (!shouldPreserveWorkGalleryMorph) {
@@ -2253,6 +2301,11 @@ function App() {
   }
 
   const startDesignerLogoCursor = (event) => {
+    if (designerLogoCursorTimeoutRef.current !== null) {
+      window.clearTimeout(designerLogoCursorTimeoutRef.current)
+      designerLogoCursorTimeoutRef.current = null
+    }
+
     if ('clientX' in event && 'clientY' in event) {
       updateDesignerLogoCursorPosition(event)
     }
@@ -2261,7 +2314,14 @@ function App() {
   }
 
   const stopDesignerLogoCursor = () => {
-    setIsDesignerLogoCursorActive(false)
+    if (designerLogoCursorTimeoutRef.current !== null) {
+      window.clearTimeout(designerLogoCursorTimeoutRef.current)
+    }
+
+    designerLogoCursorTimeoutRef.current = window.setTimeout(() => {
+      designerLogoCursorTimeoutRef.current = null
+      setIsDesignerLogoCursorActive(false)
+    }, DESIGNER_LOGO_CURSOR_LEAVE_DELAY_MS)
   }
 
   const finishIndexReturnState = () => {
@@ -2560,9 +2620,11 @@ function App() {
     )}
     
     <div
-    className={`page-stage ${isAboutPage ? 'is-about' : ''} ${isWorkPage ? 'is-work' : ''} ${isReturningToIndex ? 'is-returning-index' : ''}${isIndexIntroVisible ? ' is-index-intro' : ''}${isIndexToWorkTransition ? ' is-index-to-work-transition' : ''}${pageStageProjectNavClass}${isProjectNavSliding ? ' is-project-nav-cover-sliding' : ''}`}
+    className={`page-stage ${isAboutPage ? 'is-about' : ''} ${isWorkPage ? 'is-work' : ''} ${isReturningToIndex ? 'is-returning-index' : ''}${isIndexIntroVisible ? ' is-index-intro' : ''}${isIndexToWorkTransition ? ' is-index-to-work-transition' : ''}${pageStageProjectNavClass}${isProjectNavSliding ? ' is-project-nav-cover-sliding' : ''}${isProjectNavHandoffSettling ? ' is-project-nav-handoff-settling' : ''}`}
     ref={pageStageRef}
     style={{
+      '--work-half-col': `${workMetrics.halfColWidth}px`,
+      '--work-title-rows': visibleWorkTitle?.rows.length ?? 0,
       '--work-cover-nav-leave-duration': `${WORK_PAGE_COVER_LEAVE_DURATION_MS}ms`,
       '--work-cover-nav-enter-duration': `${WORK_PAGE_COVER_SLIDE_DURATION_MS}ms`,
       '--work-cover-nav-slide-duration': `${WORK_PAGE_COVER_SLIDE_DURATION_MS}ms`,
@@ -2574,6 +2636,10 @@ function App() {
       className={`logo-loop${isWorkPage ? ' is-compact is-link' : ''}${isAboutPage ? ' is-hidden-about' : ''}${isLogoRainbowBoost ? ' is-rainbow-boost' : ''}${isIndexIntroVisible ? ' is-index-intro-chrome' : ''}`}
       href={isWorkPage ? '/' : undefined}
       onClick={isWorkPage ? (event) => handleNavClick(event, '/') : undefined}
+      onPointerEnter={() => setIsLogoHovered(true)}
+      onPointerLeave={() => setIsLogoHovered(false)}
+      onFocus={() => setIsLogoHovered(true)}
+      onBlur={() => setIsLogoHovered(false)}
       aria-label={isWorkPage ? 'Back to Index' : undefined}
       aria-hidden={!isWorkPage}
       tabIndex={isWorkPage ? 0 : -1}
@@ -2706,19 +2772,19 @@ function App() {
     <div>Ai agent specialist_</div>
     </div>
     <div className="aboutLinks">
-    <a className="about-link-item" href="mailto:indirizzo@email.com?subject=oggettomail&amp;body=corpomail" target="_blank" rel="noreferrer">
+    <a className="about-link-item" href="mailto:crxtianhub@gmail.com" target="_blank" rel="noreferrer">
     <ion-icon className="aboutLinkArrow" name="arrow-up-sharp"></ion-icon>
     <span>EMAIL</span>
     </a>
-    <a className="about-link-item" href="https://www.instagram.com/fliesneverlie/?hl=it" target="_blank" rel="noreferrer">
+    <a className="about-link-item" href="https://www.instagram.com/crxtianhub/" target="_blank" rel="noreferrer">
     <ion-icon className="aboutLinkArrow" name="arrow-up-sharp"></ion-icon>
     <span>INSTAGRAM</span>
     </a>
-    <a className="about-link-item" href="https://www.linkedin.com/" target="_blank" rel="noreferrer">
+    <a className="about-link-item" href="https://www.linkedin.com/in/cristian-dagostino-motion-developer/" target="_blank" rel="noreferrer">
     <ion-icon className="aboutLinkArrow" name="arrow-up-sharp"></ion-icon>
     <span>LINKEDIN</span>
     </a>
-    <a className="about-link-item" href="https://github.com/" target="_blank" rel="noreferrer">
+    <a className="about-link-item" href="https://github.com/crxtian-hub" target="_blank" rel="noreferrer">
     <ion-icon className="aboutLinkArrow" name="arrow-up-sharp"></ion-icon>
     <span>GITHUB</span>
     </a>
@@ -2897,11 +2963,13 @@ function App() {
     )}
     {isWorkPageCoverVisible && (
       <figure
+      key={`work-show-cover-${visibleWorkSlug ?? route}`}
       className={`work-show-cover${isWorkPageCoverPreloading ? ' is-preloading-transition' : ''}`}
       data-work-page-cover="true"
       style={{ '--work-show-cover-image': getCssUrlValue(visibleWorkCoverImage) }}
       >
       <WorkMedia
+      key={`work-show-cover-media-${visibleWorkSlug ?? route}`}
       className="work-show-cover-image"
       src={visibleWorkCoverImage}
       alt={`${visibleWork.title} cover`}
