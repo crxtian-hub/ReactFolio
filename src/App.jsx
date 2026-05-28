@@ -331,6 +331,7 @@ const WORK_GALLERY_NAV_LEAVE_DELAY_MS = 0
 const WORK_GALLERY_NAV_ENTER_DELAY_MS =
   WORK_GALLERY_NAV_LEAVE_DELAY_MS + WORK_GALLERY_NAV_LEAVE_DURATION_MS + 80
 const WORK_SHOW_SCROLL_TOP_SETTLE_FRAMES = 2
+const WORK_SHOW_ROUTE_SCROLL_RESET_FRAMES = 3
 const INDEX_INTRO_DURATION_MS = 2900
 const DESIGNER_LOGO_CURSOR_LEAVE_DELAY_MS = 2000
 const preloadedImageUrls = new Set()
@@ -387,6 +388,21 @@ const preloadImageUrl = (imageUrl) => {
   
   preloadingImagePromises.set(normalizedImageUrl, preloadPromise)
   return preloadPromise
+}
+
+const getWorkShowPageRealMaxScrollTop = (workShowPageNode) => {
+  const fallbackMaxScrollTop = Math.max(0, workShowPageNode.scrollHeight - workShowPageNode.clientHeight)
+  const galleryNode = workShowPageNode.querySelector('.work-show-gallery')
+
+  if (!(galleryNode instanceof HTMLElement)) {
+    return fallbackMaxScrollTop
+  }
+
+  const pageStyles = window.getComputedStyle(workShowPageNode)
+  const paddingBottom = Number.parseFloat(pageStyles.paddingBottom) || 0
+  const realContentBottom = galleryNode.offsetTop + galleryNode.offsetHeight + paddingBottom
+
+  return Math.max(0, realContentBottom - workShowPageNode.clientHeight)
 }
 
 const getCssUrlValue = (assetUrl) =>
@@ -1550,6 +1566,7 @@ function App() {
   useEffect(() => {
     const pageStageNode = pageStageRef.current
     const workShowPageNode = workShowPageRef.current
+    let animationFrameId = null
     
     if (!(pageStageNode instanceof HTMLElement)) {
       return undefined
@@ -1560,10 +1577,27 @@ function App() {
       return undefined
     }
     
-    workShowPageNode.scrollTop = 0
-    pageStageNode.style.setProperty('--work-show-scroll-y', '0px')
+    const resetScrollTop = (remainingFrames = WORK_SHOW_ROUTE_SCROLL_RESET_FRAMES) => {
+      workShowPageNode.scrollTop = 0
+      pageStageNode.style.setProperty('--work-show-scroll-y', '0px')
+
+      if (remainingFrames <= 0) {
+        animationFrameId = null
+        return
+      }
+
+      animationFrameId = window.requestAnimationFrame(() => {
+        animationFrameId = null
+        resetScrollTop(remainingFrames - 1)
+      })
+    }
+
+    resetScrollTop()
     
     return () => {
+      if (animationFrameId !== null) {
+        window.cancelAnimationFrame(animationFrameId)
+      }
       pageStageNode.style.setProperty('--work-show-scroll-y', '0px')
     }
   }, [isWorkPage, visibleWorkSlug])
@@ -1595,6 +1629,46 @@ function App() {
       window.cancelAnimationFrame(clearFrameId)
     }
   }, [lockedWorkSlug, workPageCoverSlide, workShowKickerTransition])
+
+  useEffect(() => {
+    const workShowPageNode = workShowPageRef.current
+
+    if (!isWorkPage || !isProjectNavLocked || !(workShowPageNode instanceof HTMLElement)) {
+      return undefined
+    }
+
+    let animationFrameId = null
+
+    const clampScrollToRealPageEnd = () => {
+      animationFrameId = null
+      const maxScrollTop = getWorkShowPageRealMaxScrollTop(workShowPageNode)
+
+      if (workShowPageNode.scrollTop > maxScrollTop) {
+        workShowPageNode.scrollTop = maxScrollTop
+      }
+    }
+
+    const requestClamp = () => {
+      if (animationFrameId !== null) {
+        return
+      }
+
+      animationFrameId = window.requestAnimationFrame(clampScrollToRealPageEnd)
+    }
+
+    requestClamp()
+    workShowPageNode.addEventListener('scroll', requestClamp, { passive: true })
+    window.addEventListener('resize', requestClamp)
+
+    return () => {
+      workShowPageNode.removeEventListener('scroll', requestClamp)
+      window.removeEventListener('resize', requestClamp)
+
+      if (animationFrameId !== null) {
+        window.cancelAnimationFrame(animationFrameId)
+      }
+    }
+  }, [isWorkPage, isProjectNavLocked, visibleWorkSlug, visibleWorkGalleryImages.length])
   
   useEffect(() => {
     const workShowPageNode = workShowPageRef.current
@@ -1630,7 +1704,7 @@ function App() {
       const containerRect = thumbsContainerNode.getBoundingClientRect()
       const firstThumbRect = firstThumbNode.getBoundingClientRect()
       const lastThumbRect = lastThumbNode.getBoundingClientRect()
-      const maxScrollTop = Math.max(0, workShowPageNode.scrollHeight - workShowPageNode.clientHeight)
+      const maxScrollTop = getWorkShowPageRealMaxScrollTop(workShowPageNode)
       const scrollProgress =
       maxScrollTop <= 0 ? 0 : Math.min(1, Math.max(0, workShowPageNode.scrollTop / maxScrollTop))
       const startY = firstThumbRect.top - containerRect.top - WORK_THUMB_SLIDER_EXTRA_Y

@@ -1535,7 +1535,7 @@ body.is-designer-logo-cursor-active * {
 }
 .designedBy {
   position: fixed;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   font-size: 1.1vw;
   left: 50%;
   bottom: 2.5vw;
@@ -1552,6 +1552,16 @@ body.is-designer-logo-cursor-active * {
 
 .designedBy span + span::before {
   content: ' ';
+}
+
+.about-folder .about-roles,
+.about-folder .aboutLinks,
+.about-folder .about-link-item,
+.about-folder .designedBy,
+.about-folder .designedByLink {
+  font-family: var(--project-label-font-family);
+  font-size: clamp(12px, 1vw, 16px);
+  font-weight: var(--project-label-font-weight);
 }
 
 .work-show {
@@ -1617,12 +1627,6 @@ body.is-designer-logo-cursor-active * {
 
 .work-show-page::-webkit-scrollbar {
   display: none;
-}
-
-.work-show.is-title-closing .work-show-page,
-.work-show.is-project-nav-sliding .work-show-page,
-.work-show.is-project-nav-scroll-settling .work-show-page {
-  overflow-y: visible;
 }
 
 .page-stage.is-work .work-show-page {
@@ -2989,8 +2993,8 @@ body.is-designer-logo-cursor-active * {
     --works-grid-gap: 3vw;
     --works-grid-width: calc(100vw - (4 * var(--works-grid-gap)));
     --index-intro-kicker-delay: var(--index-intro-cover-duration);
-    --mobile-chrome-label-font-size: clamp(12px, 1vw, 16px);
-    --mobile-about-text-font-size: 3vw;
+    --mobile-chrome-label-font-size: 2vw;
+    --mobile-about-text-font-size: var(--mobile-chrome-label-font-size);
     --mobile-about-infos-font-size: 7vw;
     --mobile-chrome-edge-offset: calc(var(--works-grid-gap) * 2);
     --mobile-work-col-width: calc((var(--works-grid-width) - (3 * var(--works-grid-gap))) / 4);
@@ -3001,11 +3005,18 @@ body.is-designer-logo-cursor-active * {
     --work-cover-expanded-height: calc(var(--mobile-work-4col-width) * 0.5744680851);
   }
 
+  .preloader-frame,
+  .preloader-counter {
+    transform: translateY(-10vh);
+  }
+
   .about-link,
   .page-stage:not(.is-work):not(.is-about) .work-cover-kicker-viewport,
   .page-stage:not(.is-work):not(.is-about) .work-cover-caption strong,
   .page-stage:not(.is-work):not(.is-about) .work-cover-caption span {
+    font-family: var(--project-label-font-family);
     font-size: var(--mobile-chrome-label-font-size);
+    font-weight: var(--project-label-font-weight);
   }
 
   .about-link,
@@ -3024,27 +3035,33 @@ body.is-designer-logo-cursor-active * {
     width: var(--mobile-work-col-width);
   }
 
-  .page-stage.is-about .about-roles,
-  .page-stage.is-about .aboutLinks,
-  .page-stage.is-about .about-link-item,
-  .page-stage.is-about .designedBy,
-  .page-stage.is-about .designedByLink {
+  .logo-loop:hover .logo-loop-frame::before,
+  .logo-loop:focus-visible .logo-loop-frame::before {
+    animation-play-state: running;
+  }
+
+  .about-folder .about-roles,
+  .about-folder .aboutLinks,
+  .about-folder .about-link-item,
+  .about-folder .designedBy,
+  .about-folder .designedByLink {
     font-size: var(--mobile-about-text-font-size);
   }
 
-  .page-stage.is-about .about-roles {
+  .about-folder .about-roles {
     width: var(--works-grid-width);
   }
 
-  .page-stage.is-about .designedBy {
+  .about-folder .designedBy {
+    bottom: var(--mobile-chrome-edge-offset);
     width: var(--works-grid-width);
   }
 
-  .page-stage.is-about .designedBy span {
+  .about-folder .designedBy span {
     display: block;
   }
 
-  .page-stage.is-about .designedBy span + span::before {
+  .about-folder .designedBy span + span::before {
     content: '';
   }
 
@@ -3192,7 +3209,7 @@ body.is-designer-logo-cursor-active * {
   }
 
   .page-stage.is-work .work-cover.is-active:not(.is-flipping):not(.is-project-nav-source):not(.is-project-nav-target):not(.is-page-slide-layer):not(.is-returning-source) {
-    opacity: 1;
+    opacity: 0;
     pointer-events: none;
   }
 
@@ -3355,6 +3372,17 @@ body.is-designer-logo-cursor-active * {
     text-align: left;
   }
 
+  .work-show-project-nav-link:hover,
+  .work-show-project-nav-link:focus-visible {
+    opacity: 1;
+  }
+
+  .work-show-project-nav.is-locked .work-show-project-nav-link,
+  .work-show-project-nav.is-locked .work-show-project-nav-link:hover,
+  .work-show-project-nav.is-locked .work-show-project-nav-link:focus-visible {
+    opacity: 0.65;
+  }
+
   .work-show-project-nav-link.is-next::before {
     left: var(--project-nav-arrow-head-projection);
     right: auto;
@@ -3389,9 +3417,11 @@ body.is-designer-logo-cursor-active * {
     column-gap: 0;
   }
   
-  .work-show-meta-item {
+  .page-stage.is-work .work-show-meta-item {
     grid-column: auto !important;
+    font-family: var(--project-label-font-family);
     font-size: var(--mobile-chrome-label-font-size);
+    font-weight: var(--project-label-font-weight);
   }
 
   .work-show-meta-item.is-link {
@@ -3405,18 +3435,16 @@ body.is-designer-logo-cursor-active * {
     width: var(--mobile-work-4col-width);
   }
 
-  .work-show-cover,
-  .work-show-gallery,
   .work-show-gallery-transition {
     display: none;
   }
 
   .work-show-cover {
-    position: fixed;
-    top: var(--mobile-work-cover-viewport-top);
-    left: calc((100vw - var(--works-grid-width)) / 2);
-    z-index: 9700;
-    margin: 0;
+    position: relative;
+    top: auto;
+    left: auto;
+    z-index: auto;
+    margin-top: calc(var(--mobile-work-cover-viewport-top) - var(--work-show-page-padding, 0px));
     height: var(--work-cover-expanded-height);
     min-height: var(--work-cover-expanded-height);
     max-height: var(--work-cover-expanded-height);
@@ -3483,12 +3511,7 @@ body.is-designer-logo-cursor-active * {
   }
 
   .work-show-cover + .work-show-gallery {
-    margin-top: calc(
-      var(--mobile-work-cover-viewport-top) +
-      var(--work-cover-expanded-height) +
-      1rem -
-      var(--work-show-page-padding, 0px)
-    );
+    margin-top: 1rem;
   }
   
   .work-show-gallery-item,
@@ -3722,7 +3745,7 @@ body.is-designer-logo-cursor-active * {
   .signature-mark {
     left: calc((100% - var(--works-grid-width)) / 2);
     bottom: var(--mobile-chrome-edge-offset);
-    width: var(--mobile-work-col-width);
+    width: calc(var(--mobile-work-col-width) * 0.8);
   }
 
   .copyright-vertical {
