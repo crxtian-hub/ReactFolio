@@ -1,5 +1,10 @@
 
 
-20% più grandi le frecce di next e previous, 20% più piccolo crxtianhub
 
-Capire .freakDa mobile
+Capire .freak Da mobile
+
+toglierlo e metterlo in about page, in alto al posto del pianeta largo una colonna e toglierlo dal resto. 
+
+about allineato al centro della colonna. 
+
+

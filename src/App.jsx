@@ -28,7 +28,7 @@ const aboutHeartFrames = Object.entries(
 
 const aboutHeartFrameDurationsMs = [180, 420, 250]
 
-const workAssetEntries = Object.entries(
+const rawWorkAssetEntries = Object.entries(
   import.meta.glob('./assets/works/*/*.{avif,gif,jpg,jpeg,mp4,png,svg,webm,webp}', {
     eager: true,
     import: 'default',
@@ -48,6 +48,48 @@ const isVideoAsset = (assetUrl) =>
   typeof assetUrl === 'string' && VIDEO_ASSET_EXTENSION_PATTERN.test(assetUrl)
 
 const getAssetStem = (fileName) => fileName.replace(/\.[^.]+$/, '')
+
+const videoAssetsByKey = rawWorkAssetEntries.reduce((acc, [assetPath, assetUrl]) => {
+  const match = assetPath.match(/^\.\/assets\/works\/([^/]+)\/([^/]+)\.(mp4|webm)$/)
+  if (!match) {
+    return acc
+  }
+
+  const [, folderName, fileStem, extension] = match
+  const assetKey = `${folderName}/${fileStem}`
+  acc[assetKey] = {
+    ...acc[assetKey],
+    [extension]: assetUrl,
+  }
+  return acc
+}, {})
+
+const workVideoSourcesByAssetUrl = new Map()
+
+Object.values(videoAssetsByKey).forEach(({ mp4, webm }) => {
+  const canonicalUrl = webm ?? mp4
+  const sources = [
+    mp4 ? { src: mp4, type: 'video/mp4' } : null,
+    webm ? { src: webm, type: 'video/webm' } : null,
+  ].filter(Boolean)
+
+  if (canonicalUrl) {
+    workVideoSourcesByAssetUrl.set(canonicalUrl, sources)
+  }
+})
+
+const workAssetEntries = rawWorkAssetEntries.filter(([assetPath]) => {
+  const match = assetPath.match(/^\.\/assets\/works\/([^/]+)\/([^/]+)\.mp4$/)
+  if (!match) {
+    return true
+  }
+
+  const [, folderName, fileStem] = match
+  return !videoAssetsByKey[`${folderName}/${fileStem}`]?.webm
+})
+
+const getWorkVideoSources = (assetUrl) =>
+  workVideoSourcesByAssetUrl.get(assetUrl) ?? [{ src: assetUrl }]
 
 const workVideoThumbnailsByKey = Object.fromEntries(
   workVideoThumbnailEntries
@@ -421,14 +463,17 @@ const WorkMedia = ({
     return (
       <video
       className={className}
-      src={src}
       aria-label={ariaLabel}
       autoPlay
       loop
       muted
       playsInline
       preload={eager ? 'auto' : 'metadata'}
-      />
+      >
+      {getWorkVideoSources(src).map((source) => (
+        <source key={source.src} src={source.src} type={source.type} />
+      ))}
+      </video>
     )
   }
 
@@ -468,10 +513,11 @@ const WorkThumbnailMedia = ({
 
     let isCancelled = false
     const video = document.createElement('video')
+    const [thumbnailSource] = getWorkVideoSources(src)
     video.muted = true
     video.playsInline = true
     video.preload = 'auto'
-    video.src = src
+    video.src = thumbnailSource?.src ?? src
 
     const captureFrame = () => {
       if (isCancelled || video.videoWidth <= 0 || video.videoHeight <= 0) {
@@ -717,6 +763,7 @@ function App() {
   const worksStripRef = useRef(null)
   const workShowPageRef = useRef(null)
   const workThumbsRef = useRef(null)
+  const freakRef = useRef(null)
   const workCoverRefs = useRef(new Map())
   const workThumbRefs = useRef(new Map())
   const workTitleExitTimeoutRef = useRef(null)
@@ -1167,6 +1214,7 @@ function App() {
 
   useEffect(() => {
     if (!isAboutPage) {
+      setIsFreakHovered(false)
       return undefined
     }
 
@@ -1183,6 +1231,27 @@ function App() {
       body.style.overflow = previousBodyOverflow
       documentElement.style.overflow = previousHtmlOverflow
       documentElement.style.overscrollBehavior = previousOverscrollBehavior
+    }
+  }, [isAboutPage])
+
+  useEffect(() => {
+    if (!isAboutPage) {
+      return undefined
+    }
+
+    const closeFreakOnOutsidePointerDown = (event) => {
+      const freakNode = freakRef.current
+      if (freakNode instanceof HTMLElement && event.target instanceof Node && freakNode.contains(event.target)) {
+        return
+      }
+
+      setIsFreakHovered(false)
+    }
+
+    window.addEventListener('pointerdown', closeFreakOnOutsidePointerDown, true)
+
+    return () => {
+      window.removeEventListener('pointerdown', closeFreakOnOutsidePointerDown, true)
     }
   }, [isAboutPage])
   
@@ -2656,6 +2725,40 @@ function App() {
     
     workThumbRefs.current.delete(thumbIndex)
   }
+
+  const activateFreak = () => {
+    setActiveAboutHeartIndex(0)
+    setIsFreakHovered(true)
+  }
+
+  const deactivateFreak = () => {
+    setIsFreakHovered(false)
+  }
+
+  const handleFreakPointerEnter = (event) => {
+    if (event.pointerType === 'mouse') {
+      activateFreak()
+    }
+  }
+
+  const handleFreakPointerLeave = (event) => {
+    if (event.pointerType === 'mouse') {
+      deactivateFreak()
+    }
+  }
+
+  const handleFreakPointerDown = () => {
+    activateFreak()
+  }
+
+  const handleFreakKeyDown = (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return
+    }
+
+    event.preventDefault()
+    activateFreak()
+  }
   
   return (
     <>
@@ -2883,11 +2986,16 @@ function App() {
     <div
       className="FREAK"
       data-bound="true"
-      onPointerEnter={() => setIsFreakHovered(true)}
-      onPointerLeave={() => setIsFreakHovered(false)}
-      onFocus={() => setIsFreakHovered(true)}
-      onBlur={() => setIsFreakHovered(false)}
+      ref={freakRef}
+      role="button"
+      onPointerEnter={handleFreakPointerEnter}
+      onPointerLeave={handleFreakPointerLeave}
+      onPointerDown={handleFreakPointerDown}
+      onFocus={activateFreak}
+      onBlur={deactivateFreak}
+      onKeyDown={handleFreakKeyDown}
       tabIndex={0}
+      aria-pressed={isFreakHovered}
       aria-label="Freak hover trigger"
     ></div>
     </section>
