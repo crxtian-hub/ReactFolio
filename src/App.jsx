@@ -2417,7 +2417,10 @@ function App() {
     }
 
     workShowPageNode.addEventListener('scroll', onScroll, { passive: true })
-    const scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+    const shouldScrollImmediately =
+    window.matchMedia('(max-width: 900px)').matches ||
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const scrollBehavior = shouldScrollImmediately ? 'auto' : 'smooth'
     workShowPageNode.scrollTo({ top: 0, behavior: scrollBehavior })
     waitForScrollTop()
   }

@@ -49,6 +49,7 @@
 
 .logo-loop.is-link {
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .logo-loop.is-compact {
@@ -3681,7 +3682,7 @@ body.is-designer-logo-cursor-active * {
 }
 
 .displaygrid {
-  display: none;
+  /* display: none; */
   position: fixed;
   bottom: 20%;
   left: 0vw;
@@ -3768,7 +3769,7 @@ body.is-designer-logo-cursor-active * {
     left: calc((100% - var(--works-grid-width)) / 2);
     top: var(--mobile-chrome-edge-offset);
     bottom: auto;
-    width: calc(var(--mobile-work-col-width) / 2);
+    width: var(--mobile-work-col-width);
     display: none;
   }
 
